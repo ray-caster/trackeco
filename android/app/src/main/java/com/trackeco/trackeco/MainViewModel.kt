@@ -1,26 +1,27 @@
 package com.trackeco.trackeco
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.net.Uri
+import android.util.Base64
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.trackeco.trackeco.api.ApiService
-import com.trackeco.trackeco.api.DisposalResult
-import com.trackeco.trackeco.api.RetrofitClient
-import com.trackeco.trackeco.api.UserData
+import com.trackeco.trackeco.api.*
+import com.trackeco.trackeco.data.UserPreferencesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// This is the single source of truth for the entire logged-in UI
 data class AppUiState(
     val isFetchingInitialData: Boolean = true,
-    val isSimulatingDisposal: Boolean = false,
+    val isProcessingDisposal: Boolean = false,
     val userData: UserData? = null,
     val lastDisposalResult: DisposalResult? = null
 )
 
-// The ViewModel now takes the userId as a parameter in its functions
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
@@ -42,19 +43,41 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun simulateDisposal(userId: String) {
+    // This is the new, fully functional disposal method
+    fun processDisposal(userId: String, videoUri: Uri) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSimulatingDisposal = true) }
+            _uiState.update { it.copy(isProcessingDisposal = true) }
             try {
-                val result = apiService.verifyDisposalMock(userId)
+                // Step 1: Convert video file to Base64 string
+                val videoBytes = getApplication<Application>().contentResolver.openInputStream(videoUri)?.readBytes()
+                if (videoBytes == null) {
+                    throw IllegalStateException("Could not read video file")
+                }
+                val videoBase64 = Base64.encodeToString(videoBytes, Base64.DEFAULT)
+
+                // Step 2: Create the request object
+                val request = DisposalRequest(
+                    user_id = userId,
+                    latitude = -6.2088, // TODO: Replace with real GPS data
+                    longitude = 106.8456,
+                    video = videoBase64
+                )
+
+                // Step 3: Call the real API endpoint
+                val result = apiService.verifyDisposal(request)
+                
+                // Step 4: Update the UI with the rich result
                 _uiState.update { it.copy(lastDisposalResult = result) }
-                fetchUserData(userId) // Refresh data after result
+                
+                // Step 5: Refresh user data to show updated points/streak
+                fetchUserData(userId)
+
             } catch (e: Exception) {
-                println("Error simulating disposal: ${e.message}")
-                val errorResult = DisposalResult(false, 0, 0, "Could not connect to the server.")
+                println("Error processing disposal: ${e.message}")
+                val errorResult = DisposalResult(false, 0, 0, null, null, null, null, "CLIENT_ERROR", "An error occurred. Please try again.", null, null, null, null)
                 _uiState.update { it.copy(lastDisposalResult = errorResult) }
             } finally {
-                _uiState.update { it.copy(isSimulatingDisposal = false) }
+                _uiState.update { it.copy(isProcessingDisposal = false) }
             }
         }
     }

@@ -39,11 +39,16 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Profile : Screen("profile", "Profile", Icons.Default.Person)
 }
 
+/**
+ * This composable defines the entire UI for a user who is logged in.
+ * It receives the current userId as a parameter to fetch the correct data.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(userId: String, mainViewModel: MainViewModel = viewModel()) {
     
-    // Fetch user data when the MainScreen is first composed with a valid user ID.
+    // This effect will run once when the screen is first displayed with a new userId,
+    // triggering the initial data fetch.
     LaunchedEffect(userId) {
         mainViewModel.fetchUserData(userId)
     }
@@ -108,9 +113,9 @@ fun MainScreen(userId: String, mainViewModel: MainViewModel = viewModel()) {
             }
         }
 
-        if (uiState.isSimulatingDisposal) {
+        if (uiState.isProcessingDisposal) {
             Dialog(onDismissRequest = {}) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=0.5f))) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = Color.White)
                         Spacer(modifier = Modifier.height(16.dp))

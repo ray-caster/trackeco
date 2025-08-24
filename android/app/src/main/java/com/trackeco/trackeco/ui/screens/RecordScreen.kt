@@ -1,7 +1,6 @@
 package com.trackeco.trackeco.ui.screens
 
 import android.Manifest
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,16 +43,14 @@ fun RecordScreen(
     val userData = uiState.userData
     var tempVideoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // --- CORRECTED CAMERA AND PERMISSION LOGIC ---
-
+    // --- CAMERA AND PERMISSION LOGIC ---
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
 
     val videoCaptureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CaptureVideo(),
         onResult = { success ->
             if (success && tempVideoUri != null) {
-                // If the camera successfully saved the video to our temporary Uri,
-                // we pass that Uri up to the ViewModel for processing.
+                // Pass the valid URI up to the ViewModel for processing
                 onVideoRecorded(tempVideoUri!!)
             } else {
                 println("Video recording cancelled or failed.")
@@ -63,7 +60,6 @@ fun RecordScreen(
 
     val handleRecordClick = {
         if (cameraPermissionState.status.isGranted) {
-            // **THE FIX:** We must create a temporary file and get its secure URI first.
             val newVideoFile = File(context.cacheDir, "temp_video_${System.currentTimeMillis()}.mp4")
             val newVideoUri = FileProvider.getUriForFile(
                 context,
@@ -71,7 +67,6 @@ fun RecordScreen(
                 newVideoFile
             )
             tempVideoUri = newVideoUri
-            // Now we launch the camera, giving it the URI where it should save the video.
             videoCaptureLauncher.launch(newVideoUri)
         } else {
             cameraPermissionState.launchPermissionRequest()
@@ -80,9 +75,13 @@ fun RecordScreen(
     // --- END OF CAMERA LOGIC ---
 
     Box(
-        modifier = Modifier.fillMaxSize().background(
-            brush = Brush.linearGradient(colors = listOf(MaterialTheme.colorScheme.background, Color(0xFFF0F8FF)))
-        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(MaterialTheme.colorScheme.background, Color(0xFFF0F8FF))
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -90,27 +89,34 @@ fun RecordScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(32.dp)
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(200.dp)
-                    .shadow(elevation = 16.dp, shape = CircleShape, ambientColor = PrimaryColor)
-                    .clip(CircleShape)
-                    .background(brush = Brush.linearGradient(colors = listOf(PrimaryColor, HeaderGradientEnd)))
-                    .border(6.dp, AccentColor, CircleShape)
+            // Points Showcase
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 48.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = userData?.points?.toString() ?: "0",
-                        fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.White, lineHeight = 48.sp
-                    )
-                    Text(
-                        text = "Points",
-                        fontSize = 16.sp, color = Color.White.copy(alpha = 0.9f), modifier = Modifier.padding(top = 8.dp)
-                    )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(200.dp)
+                        .shadow(elevation = 16.dp, shape = CircleShape, ambientColor = PrimaryColor)
+                        .clip(CircleShape)
+                        .background(brush = Brush.linearGradient(colors = listOf(PrimaryColor, HeaderGradientEnd)))
+                        .border(6.dp, AccentColor, CircleShape)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = userData?.points?.toString() ?: "0",
+                            fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.White, lineHeight = 48.sp
+                        )
+                        Text(
+                            text = "Points",
+                            fontSize = 16.sp, color = Color.White.copy(alpha = 0.9f), modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(48.dp))
+
+            // Stats Row
             Row(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(bottom = 48.dp)
@@ -118,9 +124,11 @@ fun RecordScreen(
                 StatItem(value = userData?.streak?.toString() ?: "0", label = "Day Streak")
                 StatItem(value = userData?.eco_rank ?: "Novice", label = "Eco Rank")
             }
+
+            // Record Button
             Button(
                 onClick = handleRecordClick,
-                enabled = !uiState.isSimulatingDisposal,
+                enabled = !uiState.isProcessingDisposal,
                 modifier = Modifier.width(200.dp).height(80.dp),
                 shape = RoundedCornerShape(40.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AccentColor),

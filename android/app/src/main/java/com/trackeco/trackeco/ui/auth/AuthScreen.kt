@@ -33,20 +33,22 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Welcome to TrackEco", style = MaterialTheme.typography.headlineMedium)
+        Text("Welcome to EcoTrack", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") })
+        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, isError = uiState.errorMessage != null)
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
+            isError = uiState.errorMessage != null
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = { authViewModel.login(email, password) },
-            enabled = !uiState.isLoading
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth()
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
@@ -54,24 +56,65 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel = vie
                 Text("Login")
             }
         }
-        TextButton(onClick = { navController.navigate("signup") }) {
+        TextButton(onClick = { navController.navigate("signup") }, enabled = !uiState.isLoading) {
             Text("Don't have an account? Sign Up")
         }
         if (uiState.errorMessage != null) {
-            Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
+            Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
 
 @Composable
-fun SignUpScreen(navController: NavController) {
-    // TODO: Build the SignUpScreen UI, similar to LoginScreen
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Create Account", style = MaterialTheme.typography.headlineMedium)
+fun SignUpScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    val uiState by authViewModel.uiState.collectAsState()
+    
+    // When registration is successful, show a message and navigate back to login
+    LaunchedEffect(uiState.registrationSuccess) {
+        if (uiState.registrationSuccess) {
+            navController.navigate("login") {
+                popUpTo("login") { inclusive = true }
+            }
+            // It's good practice to reset the state in the ViewModel
+            authViewModel.resetRegistrationStatus()
+        }
+    }
+    
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Create Your Account", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(32.dp))
+        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, isError = uiState.errorMessage != null)
         Spacer(modifier = Modifier.height(16.dp))
-        // Add TextFields and a Button here
-        TextButton(onClick = { navController.popBackStack() }) {
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            isError = uiState.errorMessage != null
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = { authViewModel.signUp(email, password) },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+             if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            } else {
+                Text("Sign Up")
+            }
+        }
+        TextButton(onClick = { navController.popBackStack() }, enabled = !uiState.isLoading) {
             Text("Already have an account? Login")
+        }
+        if (uiState.errorMessage != null) {
+            Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

@@ -64,8 +64,11 @@ fun ProfileScreen(uiState: AppUiState) {
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     LinearProgressIndicator(
-                        progress = { progress }, // Functional progress bar
-                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small)
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(MaterialTheme.shapes.small)
                     )
                 }
             }
@@ -81,7 +84,7 @@ fun ProfileScreen(uiState: AppUiState) {
                 CardHeader(text = "Profile Information", icon = Icons.Default.Info)
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow(label = "User ID:", value = userData?.user_id ?: "Loading...")
-                    InfoRow(label = "Member Since:", value = "August 20, 2025")
+                    InfoRow(label = "Member Since:", value = "August 20, 2025") // This can be added to UserData later
                 }
             }
         }
@@ -90,8 +93,7 @@ fun ProfileScreen(uiState: AppUiState) {
 
 // Helper function to calculate XP progress to the next level
 private fun calculateXpProgress(xp: Int): Float {
-    // Define the XP thresholds for each level
-    val levels = listOf(0, 100, 300, 600, 1000, 1500, 2500)
+    val levels = listOf(0, 100, 300, 600, 1000, 1500, 2500) // XP thresholds
     if (xp >= levels.last()) return 1f
 
     var currentLevelXp = 0

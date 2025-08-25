@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext traffic for debug builds only -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">157.66.55.198</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    
+    <!-- Production configuration with certificate pinning -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">trackeco-api.yourdomain.com</domain>
+        <pin-set expiration="2026-01-01">
+            <!-- Add your certificate pins here for production -->
+            <pin digest="SHA256">YOUR_CERTIFICATE_PIN_HERE</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
